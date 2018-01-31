@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="io.zeropass.trid.MainActivity">
+
+    <LinearLayout
+        android:id="@+id/layoutMain"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp">
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="15pt" />
+
+        <EditText
+            android:id="@+id/editTextDataToSign"
+            android:hint="Data to Sign with ePassport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text"
+            android:digits="0,1,2,3,4,5,6,7,8,9,abcdefghijklmnoqprstuvwzxy"
+            android:maxLength="32"
+            android:text="" />
+
+        <EditText
+            android:id="@+id/editTextPassportNumber"
+            android:hint="Passport Number (9)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textCapCharacters"
+            android:digits="0,1,2,3,4,5,6,7,8,9,ABCDEFGHIJKLMNOPQRSTUVWZYX"
+            android:maxLength="9"
+            android:text="" />
+
+        <EditText
+            android:id="@+id/editTextDateOfBirth"
+            android:hint="Date Of Birth (YYMMDD)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:maxLength="6"
+            android:inputType="number" />
+
+
+
+        <EditText
+            android:id="@+id/editTextDateOfExpiry"
+            android:hint="Date Of Expiry (YYMMDD)"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:maxLength="6"
+            android:inputType="number" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="25pt" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textView2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:text="NFC is listening ..."
+                android:textAlignment="center"
+                android:textSize="12pt" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="25pt" />
+
+        <Button
+            android:id="@+id/btnCopy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Copy output to clipboard" />
+
+        <View
+            android:id="@+id/separator1"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@android:color/darker_gray"/>
+
+        <ScrollView
+            android:id="@+id/scrollViewOutput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/textViewOutput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#f0f0f0"
+                    android:text="35938450394859034i5k3k43904k34t034i5,3ij9as4as4a5as5da5sd5as5asd5as5da5sd5asd5asd5a5sd5asd5asd5a5sd5asd5as5da5sd5asd5a5sd5asd5as5a5sa5s5as5sa5s5as5as,3ij9as4as4a5as5da5sd5as5asd5as5da5sd5asd5asd5a5sd5asd5asd5a5sd5asd5as5da5sd5asd5a5sd5asd5as5a5sa5s5as5sa5s5as5as, 6ad6ad6ad6a6da6d6adasdasdasdasd6a6ad6ad, 6ad6ad6a6da6d6ad6a6d6adad"
+                    android:textSize="08pt" />
+                <View
+                    android:id="@+id/separator2"
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:background="#a0a0a0"/>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</android.support.constraint.ConstraintLayout>
