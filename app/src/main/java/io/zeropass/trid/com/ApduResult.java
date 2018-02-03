@@ -4,7 +4,7 @@
 * file LICENSE or https://opensource.org/licenses/MIT.
 */
 
-package io.zeropass.trid.net;
+package io.zeropass.trid.com;
 
 import java.security.InvalidParameterException;
 

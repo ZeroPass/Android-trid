@@ -7,24 +7,21 @@
 package io.zeropass.trid;
 
 import org.hamcrest.core.IsEqual;
+import org.junit.Assert;
 import org.junit.Test;
 
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.logging.Logger;
-
 import javax.crypto.SecretKey;
 
-import io.zeropass.trid.net.ApduCmd;
-import io.zeropass.trid.net.ApduResult;
+import io.zeropass.trid.com.ApduCmd;
+import io.zeropass.trid.com.ApduResult;
+import io.zeropass.trid.crypto.PassportSessionCipher;
+import io.zeropass.trid.crypto.PassportSessionKey;
 import io.zeropass.trid.passport.ApduEAData;
-import io.zeropass.trid.passport.PassportSessionCipher;
-import io.zeropass.trid.passport.PassportSessionKey;
 import io.zeropass.trid.passport.PassportTools;
+import io.zeropass.trid.smartcard.ISO7816;
 
+import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertNotNull;
 
@@ -38,33 +35,7 @@ public class PassportToolsTest {
     @Test
     public static void mrzCheckDigit() {
 
-        X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(Utils.strToHex("30819F300D06092A864886F70D010101050003818D0030818902818100A13F98038CC80DE9BE94A917B5CFCE74CC4BB1337222E82D83C3FC2CBF5E81F80CBC4475CE2FCB08DBB2CEDAB4B3264DC12961B8166B32D238E5A52B02A271F46165B5EF03AC24C76B85D4B4E5A872925D692E8159B1B2BCFB5D6A2E086A88A78853363BC2A52E9725C668416243C45E921DED173FF970B4D0C5F277D034CCFD0203010000"));
-
-        String[] algorithms = { "RSA", "EC" };
-
-        PublicKey publicKey = null;
-        for (String algorithm: algorithms) {
-            try {
-                KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
-                publicKey = keyFactory.generatePublic(pubKeySpec);
-                int i = 0;
-
-                if(publicKey != null) {
-                    break;
-                }
-               // return publicKey;
-            } catch (InvalidKeySpecException e) {
-				/* NOTE: Ignore, try next algorithm. */
-                e.printStackTrace();
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
         /* Test vectors from ICAO 9303-11 appendix D.2 */
-
         testMRZCheckDigit("D23145890734", '9');
         testMRZCheckDigit("340712", '7');
         testMRZCheckDigit("950712", '2');
@@ -122,7 +93,7 @@ public class PassportToolsTest {
 
         /* Decrypt received EA Data */
         ApduEAData respEaData = new ApduEAData(Utils.strToHex("46B9342A41396CD7386BF5803104D7CEDC122B9132139BAF2EEDC94EE178534F2F2D235D074D7449"));
-        assert(respEaData.verify(macKey));
+        assertEquals(respEaData.verify(macKey), true);
 
         byte[] kIC = PassportTools.extractKicFromEic(encKey, respEaData, rndIFD);
         assertNotNull(kIC);
@@ -172,7 +143,7 @@ public class PassportToolsTest {
             ApduResult rapdu = new ApduResult(Utils.strToHex("990290008E08FA855A5D4C50A8ED9000"));
             rapdu = sc.decrypt(rapdu);
             assertNotNull(rapdu);
-            assert(rapdu.statusCode() == ISO7816.SW_NO_ERROR);
+            assertEquals(rapdu.statusCode() == ISO7816.SW_NO_ERROR, true);
 
             // 2. Read binary (4 four bytes)
             /* Encrypt APDU cmd */
@@ -185,7 +156,7 @@ public class PassportToolsTest {
             rapdu = new ApduResult(Utils.strToHex("8709019FF0EC34F9922651990290008E08AD55CC17140B2DED9000"));
             rapdu = sc.decrypt(rapdu);
             assertNotNull(rapdu);
-            assert(rapdu.statusCode() == ISO7816.SW_NO_ERROR);
+            assertEquals(rapdu.statusCode() == ISO7816.SW_NO_ERROR, true);
 
             byte[] read4Bytes = rapdu.data();
             assertArrayEquals(Utils.strToHex("60145F01"), read4Bytes);
@@ -201,7 +172,7 @@ public class PassportToolsTest {
             rapdu = new ApduResult(Utils.strToHex("871901FB9235F4E4037F2327DCC8964F1F9B8C30F42C8E2FFF224A990290008E08C8B2787EAEA07D749000"));
             rapdu = sc.decrypt(rapdu);
             assertNotNull(rapdu);
-            assert(rapdu.statusCode() == ISO7816.SW_NO_ERROR);
+            assertEquals(rapdu.statusCode() == ISO7816.SW_NO_ERROR, true);
             assertArrayEquals(Utils.strToHex("04303130365F36063034303030305C026175"), rapdu.data());
 
             // Final check
@@ -209,7 +180,7 @@ public class PassportToolsTest {
         }
         catch (Exception e) {
             Logger.getGlobal().severe("And exception was thrown: " + e.getMessage());
-            assert(false);
+            Assert.fail();
         }
     }
 

@@ -1,27 +1,11 @@
 /*
- * This file is part of the SCUBA smart card framework.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * Copyright (C) 2009 - 2018  The SCUBA team.
- *
- * $Id: ASN1Util.java 302 2018-01-13 23:54:51Z martijno $
- */
+* Copyright (c) 2018 ZeroPass
+* Distributed under the MIT software license, see the accompanying
+* file LICENSE or https://opensource.org/licenses/MIT.
+*/
 
 
-package io.zeropass.trid.libs;
+package io.zeropass.trid.tlv;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -48,7 +32,7 @@ class ASN1Util implements ASN1Constants {
    */
   static Object interpretPrimitiveValue(int tag, byte[] valueBytes) {
     SimpleDateFormat sdf = new SimpleDateFormat(SDF);
-    if (TLVUtil.getTagClass(tag) != UNIVERSAL_CLASS) {
+    if (TLVUtils.getTagClass(tag) != UNIVERSAL_CLASS) {
       return valueBytes;
     }
 
@@ -82,10 +66,10 @@ class ASN1Util implements ASN1Constants {
 
   /*
   static String tagToString(int tag) {
-    if (TLVUtil.getTagClass(tag) != UNIVERSAL_CLASS) {
+    if (TLVUtils.getTagClass(tag) != UNIVERSAL_CLASS) {
       return "'0x" + Hex.intToHexString(tag) + "'";
     }
-    if (TLVUtil.isPrimitive(tag)) {
+    if (TLVUtils.isPrimitive(tag)) {
       switch (tag & 0x1F) {
         case BOOLEAN_TYPE_TAG:
           return "BOOLEAN";

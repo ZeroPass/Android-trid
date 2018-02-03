@@ -1,6 +1,7 @@
 package io.zeropass.trid.passport;
 
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 
@@ -41,7 +42,7 @@ public class ApduEAData {
     }
 
     public boolean verify(SecretKey mKey) {
-        return Utils.memcmp(PassportTools.mac(mKey, E), M);
+        return Arrays.equals(PassportTools.mac(mKey, E), M);
     }
 
     public byte[] decrypt(SecretKey decKey) {

@@ -9,9 +9,14 @@ package io.zeropass.trid;
 import android.util.Log;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -31,8 +36,7 @@ import java.util.Random;
 
 public class Utils {
 
-
-    private static final Logger Journal = Logger.getLogger("utils");
+    private static final Logger Journal = Logger.getLogger("io.trid.utils");
     public static void printDebug(final String msg) {
         printDebug("", msg);
     }
@@ -42,34 +46,6 @@ public class Utils {
             Log.d(tag, msg);
         }
     }
-
-    private static final Random mRng = new SecureRandom();
-    public static byte[] getRandomBytes(int len) {
-        byte[] rnd = new byte[len];
-        mRng.nextBytes(rnd);
-        return rnd;
-    }
-
-    public static MessageDigest getSha1() {
-        try {
-            return MessageDigest.getInstance("SHA-1");
-        }
-        catch (NoSuchAlgorithmException e){return null;}
-    }
-
-    public static Mac getMac(final String algo) throws NoSuchAlgorithmException {
-        return Mac.getInstance(algo, new org.spongycastle.jce.provider.BouncyCastleProvider());
-    }
-
-    public static Cipher getCipher(final String algo) throws NoSuchAlgorithmException, NoSuchPaddingException {
-        return Cipher.getInstance(algo);
-    }
-
-    public static byte[] sha1(byte[] data) {
-        MessageDigest sha1 = getSha1();
-        return sha1.digest(data);
-    }
-
 
     public static boolean memcmp(byte[] src1, byte[] src2) {
         return memcmp(src1, src2,0);

@@ -8,14 +8,19 @@ import static org.junit.Assert.*;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class ExampleUnitTest {
+public class TridUnitTest {
     @Test
-    public void utils() throws Exception {
+    public void Utils() throws Exception {
         UtilsTest.adjustParityBits();
     }
 
     @Test
-    public void passportTools() {
+    public void PassportTools() {
         PassportToolsTest.runAll();
+    }
+
+    @Test
+    public void CryptoUtils() {
+        CryptoUtilsTest.runAll();
     }
 }

@@ -25,9 +25,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.zeropass.trid.Utils;
+import io.zeropass.trid.crypto.CryptoUtils;
+import io.zeropass.trid.crypto.PassportSessionKey;
 
 public class PassportTools {
-    private static final Logger Journal = Logger.getLogger("passport");
+    private static final Logger Journal = Logger.getLogger("io.trid.passport");
 
     /** Mode for KDF. */
     public static final int ENC_MODE = 1, MAC_MODE = 2;
@@ -44,20 +46,20 @@ public class PassportTools {
 
     public static Mac getMac() {
         try {
-            return Utils.getMac("ISO9797ALG3WITHISO7816-4PADDING");
+            return CryptoUtils.getMac("ISO9797ALG3WITHISO7816-4PADDING");
         } catch (NoSuchAlgorithmException e) { return null; }
     }
 
 
     public static Mac getMacNoPadding() {
         try {
-            return Utils.getMac("ISO9797Alg3Mac");
+            return CryptoUtils.getMac("ISO9797Alg3Mac");
         } catch (NoSuchAlgorithmException e) { return null; }
     }
 
     public static Cipher getCipher() {
         try {
-            return Utils.getCipher("DESede/CBC/NoPadding");
+            return CryptoUtils.getCipher("DESede/CBC/NoPadding");
         }
         catch (NoSuchAlgorithmException e) { return null; }
         catch (NoSuchPaddingException e) { return null; }
@@ -171,12 +173,12 @@ public class PassportTools {
      * see: Example 2 of Appendix 3 in ICAO 9303-3
      *      https://www.icao.int/publications/Documents/9303_p3_cons_en.pdf
      * */
-    public static String formatDocumentNumber(String docNum) throws InvalidAlgorithmParameterException {
+    public static String formatDocumentNumber(String docNum) throws InvalidParameterException {
         /* Remove from number '<'. */
         String formatedDocNum = docNum.replace('<', ' ').trim().replace(' ', '<');
 
         if(formatedDocNum.length() > 9) { // Sanity check
-            throw new InvalidAlgorithmParameterException("Invalid document number!");
+            throw new InvalidParameterException("Invalid document number!");
         }
 
         /* Fill missing chars with '<' until length 9. */
@@ -275,7 +277,7 @@ public class PassportTools {
     * */
     public static byte[] computeKeySeed(String documentNumber, char dnCheckDigit, String dateOfBirth, char dobCheckDigit, String dateOfExpiry, char doeCheckDigit, boolean truncated) {
         try {
-            MessageDigest sha1 = Utils.getSha1();
+            MessageDigest sha1 = CryptoUtils.getSha1();
             sha1.update(documentNumber.getBytes("UTF-8"));
             sha1.update(new byte[]{(byte)dnCheckDigit});
             sha1.update(dateOfBirth.getBytes("UTF-8"));

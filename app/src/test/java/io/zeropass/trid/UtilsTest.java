@@ -20,6 +20,7 @@ public class UtilsTest {
         Utils.adjustParityBits(input);
         assertThat(input, IsEqual.equalTo(output));
     }
+
     @Test
     public static void adjustParityBits() {
         Pair<byte[], byte[]> tv1 = new Pair<>(Utils.strToHex("AB94FCEDF2664EDF"), Utils.strToHex("AB94FDECF2674FDF"));

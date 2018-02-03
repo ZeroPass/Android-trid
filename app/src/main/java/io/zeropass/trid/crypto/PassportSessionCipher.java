@@ -4,7 +4,7 @@
 * file LICENSE or https://opensource.org/licenses/MIT.
 */
 
-package io.zeropass.trid.passport;
+package io.zeropass.trid.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -17,11 +17,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import io.zeropass.trid.ISO7816;
-import io.zeropass.trid.libs.TLVUtil;
-import io.zeropass.trid.net.ApduCmd;
-import io.zeropass.trid.net.ApduResult;
-import io.zeropass.trid.net.SessionCipher;
+import io.zeropass.trid.passport.PassportTools;
+import io.zeropass.trid.smartcard.ISO7816;
+import io.zeropass.trid.tlv.TLVUtils;
+import io.zeropass.trid.com.ApduCmd;
+import io.zeropass.trid.com.ApduResult;
 
 /**
  * Created by smlu on 29. 01. 2018.
@@ -29,7 +29,7 @@ import io.zeropass.trid.net.SessionCipher;
 
 public class PassportSessionCipher extends SessionCipher {
 
-    private static final Logger Journal = Logger.getLogger("passport.session.cipher");
+    private static final Logger Journal = Logger.getLogger("io.trid.crypto.psc");
     PassportSessionKey mKS;
 
     public PassportSessionCipher(PassportSessionKey key) {
@@ -84,7 +84,7 @@ public class PassportSessionCipher extends SessionCipher {
 
             bOut.reset();
             bOut.write(hasDO85 ? (byte)0x85 : (byte)0x87);
-            bOut.write(TLVUtil.getLengthAsBytes(ciphertext.length + (hasDO85 ? 0 : 1)));
+            bOut.write(TLVUtils.getLengthAsBytes(ciphertext.length + (hasDO85 ? 0 : 1)));
 
             if(!hasDO85) {
                 bOut.write(0x01);

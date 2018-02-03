@@ -6,8 +6,14 @@
 
 package io.zeropass.trid;
 
-import io.zeropass.trid.net.NfcTransmitterError;
+import io.zeropass.trid.com.NfcProvider;
+import io.zeropass.trid.crypto.CryptoUtils;
+import io.zeropass.trid.passport.EPassport;
+import io.zeropass.trid.passport.PassportError;
+
+import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.PublicKey;
 import java.util.logging.Logger;
 
 import android.app.AlertDialog;
@@ -111,11 +117,11 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    void setOutput(byte[] iccPublicKey, byte[] iccSignature) {
+    void setOutput(PublicKey iccPublicKey, byte[] iccSignature) {
         /* Format: DataToSign, Sha1(DataToSign), iccPublicKey, iccSignature, iccPubKeyExp */
         String output = Utils.hexToStr(mDataToSign) + "," +
-                Utils.hexToStr(Utils.sha1(mDataToSign)) + "," +
-                Utils.hexToStr(iccPublicKey) + "," +
+                Utils.hexToStr(CryptoUtils.sha1(mDataToSign)) + "," +
+                Utils.hexToStr(iccPublicKey.getEncoded()) + "," +
                 Utils.hexToStr(iccSignature)
                  + ""/* missing exponent */ ;
 
@@ -221,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
             new Async() {
                 private boolean mException;
                 private boolean mFinish = false;
-                byte[] iccPubKey = null;
+                PublicKey iccPubKey = null;
                 byte[] iccSignature = null;
 
                 @Override
@@ -234,24 +240,22 @@ public class MainActivity extends AppCompatActivity {
 
                     IsoDep isoDep = IsoDep.get(nfcTag);
                     if (isoDep == null) {
-                        Journal.warning("ePassport was removed from terminal!");
+                        Journal.warning("ICC was removed from terminal!");
+                        showToast("ePassport was removed !");
                         return;
                     }
 
                     try {
                         mException = false;
-                        EPassport passport = new EPassport(isoDep);
-                        passport.selectApplet();
-//                        passport.externalAuthenticate(Utils.deriveKey(Utils.strToHex("239AB9CB282DAF66231DC5A4DF6BFBAE"), Utils.ENC_MODE),
-//                                Utils.deriveKey(Utils.strToHex("239AB9CB282DAF66231DC5A4DF6BFBAE"), Utils.MAC_MODE),
-//                                Utils.strToHex("4608F91988702212"),
-//                                Utils.strToHex("781723860C06C226"),
-//                                Utils.strToHex("0B795240CB7049B01C19B33E32804F0B"));
+                        EPassport passport = new EPassport(new NfcProvider(isoDep));
+                        passport.selectEMRTD();
 
                         if(passport.doBAC(mPassportNumber, mDateOfBirth, mDateOfExpiry)) {
                            iccPubKey = passport.readPublicKey();
-                           iccSignature =  passport.signData(Arrays.copyOfRange(Utils.sha1(mDataToSign), 0, 8));
+                           iccSignature =  passport.internalAuthenticate(Arrays.copyOfRange(CryptoUtils.sha1(mDataToSign), 0, 8));
 
+                           Journal.info("ICC Public key: " + Utils.hexToStr(iccPubKey.getEncoded()));
+                           Journal.info("ICC Signature: " + Utils.hexToStr(iccSignature));
                            if(iccPubKey != null && iccSignature != null) {
                                showToast("Signing data succeed!");
                            }
@@ -259,20 +263,15 @@ public class MainActivity extends AppCompatActivity {
                                showToast("An error occurred while trying to sign data!");
                            }
                         } else {
-                            showToast("Auth failed. Check input data!");
+                            showToast("ePassport auth failed. Check input data!");
                         }
                     }
-                    catch (NfcTransmitterError e) {
-                        showToast("Reading ePassport via NFC failed!");
-                    }
-                    catch (EPassportError e) {
+                    catch (PassportError | IOException e) {
+                        showToast("Signing data via ePassport failed!");
                         Journal.severe("An Exception was thrown while trying to read ePassport: " + e.getMessage());
                         mException = true;
                     }
-                    catch (InvalidAlgorithmParameterException e) {
-                        e.printStackTrace();
-                    } finally {
-                    }
+
                 }
 
                 @Override

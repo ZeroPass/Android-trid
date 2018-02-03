@@ -4,11 +4,11 @@
 * file LICENSE or https://opensource.org/licenses/MIT.
 */
 
-package io.zeropass.trid.passport;
+package io.zeropass.trid.crypto;
 
 import java.security.InvalidParameterException;
-
 import javax.crypto.SecretKey;
+import io.zeropass.trid.passport.PassportTools;
 
 public class PassportSessionKey {
     private SecretKey mKSenc;

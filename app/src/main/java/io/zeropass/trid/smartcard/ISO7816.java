@@ -4,7 +4,7 @@
 * file LICENSE or https://opensource.org/licenses/MIT.
 */
 
-package io.zeropass.trid;
+package io.zeropass.trid.smartcard;
 
 /**
  * Created by smlu on 23. 01. 2018.

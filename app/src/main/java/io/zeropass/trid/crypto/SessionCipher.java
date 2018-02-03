@@ -4,9 +4,12 @@
 * file LICENSE or https://opensource.org/licenses/MIT.
 */
 
-package io.zeropass.trid.net;
+package io.zeropass.trid.crypto;
 
 import java.io.IOException;
+
+import io.zeropass.trid.com.ApduCmd;
+import io.zeropass.trid.com.ApduResult;
 
 /**
  * Created by smlu on 29. 01. 2018.

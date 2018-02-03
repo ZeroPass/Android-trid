@@ -6,24 +6,22 @@
 
 package io.zeropass.trid.passport;
 
-import android.nfc.tech.IsoDep;
-
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.security.PublicKey;
 import javax.crypto.SecretKey;
 import java.util.logging.Logger;
 
-import io.zeropass.trid.ISO7816;
 import io.zeropass.trid.Utils;
-import io.zeropass.trid.net.ApduCmd;
-import io.zeropass.trid.net.ApduResult;
-import io.zeropass.trid.net.NfcTransmitterError;
+import io.zeropass.trid.com.ComProvider;
+import io.zeropass.trid.crypto.CryptoUtils;
+import io.zeropass.trid.crypto.PassportSessionKey;
+import io.zeropass.trid.passport.lds.LDSFile;
 import io.zeropass.trid.smartcard.SmartCardError;
+import io.zeropass.trid.tlv.TLVUtils;
 
 
 /*/
@@ -41,15 +39,6 @@ import io.zeropass.trid.smartcard.SmartCardError;
 */
 public class EPassport extends PassportApdu {
 
-    /** The data group presence list. */
-    public static final short EF_COM = 0x011E;
-
-    /** The security document. */
-    public static final short EF_SOD = 0x011D;
-
-    /** Data group 15 contains the public key used for Active Authentication. */
-    public static final short EF_DG15 = 0x010F;
-
 
 
     private PublicKey mPublicKey; // ePassport's public key
@@ -57,44 +46,47 @@ public class EPassport extends PassportApdu {
 
     private static final SimpleDateFormat mSdf = new SimpleDateFormat("yyMMdd");
 
-    private static final Logger Journal = Logger.getLogger("passport");
+    private static final Logger Journal = Logger.getLogger("io.trid.passport");
 
 
 
-    public EPassport(IsoDep isoDep) throws NfcTransmitterError, PassportError {
-        super(isoDep);
-    }
+    public EPassport(ComProvider provider) throws IOException, PassportError {
+        super(provider);
 
-    public void selectApplet() throws NfcTransmitterError {
-        final byte[] appletId = { (byte) 0xA0, 0x00, 0x00, 0x02, 0x47, 0x10, 0x01 };
-        selectApplet(appletId);
+        if(!isConnected()) {
+            connect();
+        }
     }
 
     /*Returns ICC's public key */
-    public byte[] readPublicKey() throws NfcTransmitterError {
+    public PublicKey readPublicKey() throws IOException {
         Journal.info("Reading IC Public Key from IC" );
 
-        byte[] publicKey = null;
+        PublicKey pk = null;
         try {
-            selectFile(EF_COM);
-            selectFile(EF_SOD);
-            selectFile(EF_DG15);
+            selectFile(LDSFile.EF_COM_FID);
+            selectFile(LDSFile.EF_SOD_FID);
 
-            byte[] first8Bytes = readBinary(0, 8);
+            // TODO: try reading by SFI
+            byte[] dg15File = readFile(LDSFile.EF_DG15_FID);
+            if(dg15File == null) {
+                return null;
+            }
 
-            // TODO: +2 is wrong should be + 3! why: TLV= Tag + Length + Value.
-            //   Tag= 1 byte, Length= 1-3 byte depends on length. and since the size of public key is greater then 128bytes, the size of TL is 3bytes, which has to be counted
-            int length = readLength(Utils.copyOut(first8Bytes, 1, 7)) + 3;
+            int tag = TLVUtils.getTag(dg15File, 0);
+            if(tag != LDSFile.EF_DG15_TAG) {
+                Journal.severe("readPublicKey: Received invalid EF with TAG=" + tag );
+                return null;
+            }
 
-            byte[] data = readBinary(8, length - 8);
+            /* Extract ASN.1 DER encoded public key */
+            pk = CryptoUtils.getPublicKeyFromBytes(TLVUtils.getValue(dg15File));
 
-            publicKey = Utils.join(first8Bytes, data);
-
-        } catch (SmartCardError e) {
-            Journal.severe("readPublicKey: And exception was thrown e=" + e.getMessage());
+        } catch (SmartCardError | IOException e) {
+            Journal.severe("readPublicKey: An exception was thrown e=" + e.getMessage());
         }
 
-        return publicKey;
+        return pk;
     }
 
     int readLength(byte[] data ) {
@@ -135,13 +127,13 @@ public class EPassport extends PassportApdu {
     *
     *  @returns kIC
     */
-    private PassportSessionKey generateSessionKey(SecretKey encKey, SecretKey macKey, byte[] rndIC, byte[] rndIFD, byte[] kIFD) throws NfcTransmitterError {
+    private PassportSessionKey generateSessionKey(SecretKey encKey, SecretKey macKey, byte[] rndIC, byte[] rndIFD, byte[] kIFD) throws IOException {
         Utils.printDebug(Journal.getName(), String.format("generateSessionKey: generating E.IFD and M.IFD from:\nRND.IC=%s\nRND.IFD=%s\nK.IFD=%s\nK.ENC=%s\nK.MAC=%s",
                 Utils.hexToStr(rndIC), Utils.hexToStr(rndIFD), Utils.hexToStr(kIFD), Utils.hexToStr(encKey.getEncoded()), Utils.hexToStr(macKey.getEncoded())));
 
         ApduEAData eaData = PassportTools.generateApduEAData(encKey, macKey, rndIC, rndIFD, kIFD);
         if(eaData == null) {
-            Journal.warning("generateSessionKey: failed to generate EA data");
+            Journal.warning("generateSessionKey: Failed to generate EA data");
             return null;
         }
 
@@ -153,7 +145,7 @@ public class EPassport extends PassportApdu {
 
         /* Verify result */
         if(!result.verify(macKey)) {
-            Journal.warning("generateSessionKey: received EA data mac mismatch!");
+            Journal.warning("generateSessionKey: Received EA data checksum mismatch!");
             return null;
         }
 
@@ -164,10 +156,12 @@ public class EPassport extends PassportApdu {
 
     /*
     *  Function does Basic Access Control (BAC) as specified in document ICAO 9303-11
+    *  Note: BAC might become deprecated in the future. Instead PACE should be used
+    *        to establish session. see: section 4.1 ++https://www.icao.int/publications/Documents/9303_p11_cons_en.pdf
     */
-    public  boolean doBAC(String documentNumber, String dateOfBirth, String dateOfExpiry) throws InvalidAlgorithmParameterException, NfcTransmitterError {
+    public  boolean doBAC(String documentNumber, String dateOfBirth, String dateOfExpiry) throws IOException, InvalidParameterException {
         documentNumber = PassportTools.formatDocumentNumber(documentNumber);
-        //TODO verify dates
+        //TODO verifySignature dates
 //        dateOfBirth = mSdf.format(dateOfBirth);
 //        dateOfExpiry = mSdf.format(dateOfExpiry);
         Utils.printDebug(Journal.getName(), "Executing BAC with: passportNumber:" + documentNumber +
@@ -186,16 +180,19 @@ public class EPassport extends PassportApdu {
    /*
    *  See appendix D.3 of ICAO 9303-11
    */
-    private boolean doBAC(SecretKey encKey, SecretKey macKey) throws NfcTransmitterError {
+    private boolean doBAC(SecretKey encKey, SecretKey macKey) throws IOException {
+        Utils.printDebug(Journal.getName(), "Requesting challenge from IC");
         byte[] rndIC = getChallenge();
         if(rndIC == null) {
             Journal.warning("BAC error: failed to get challenge from IC!");
             return false;
         }
 
+        Utils.printDebug(Journal.getName(), "Received challenge from IC: RND.IC=" + Utils.hexToStr(rndIC));
+
         /* Generate random num and key */
-        byte[] rndIFD = Utils.getRandomBytes(PassportTools.RND_IFD_LEN);
-        byte[] kIFD   = Utils.getRandomBytes(PassportTools.KIFD_LEN);
+        byte[] rndIFD = CryptoUtils.getRandomBytes(PassportTools.RND_IFD_LEN);
+        byte[] kIFD   = CryptoUtils.getRandomBytes(PassportTools.KIFD_LEN);
 
         /* Generate session key with IC */
         PassportSessionKey ks = generateSessionKey(encKey, macKey, rndIC, rndIFD, kIFD);
