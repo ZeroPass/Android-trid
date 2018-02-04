@@ -37,6 +37,20 @@ public class CryptoUtils {
         catch (NoSuchAlgorithmException e){return null;}
     }
 
+    public static MessageDigest getSha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e){return null;}
+    }
+
+    public static MessageDigest getSha3_256() {
+        try {
+            return MessageDigest.getInstance("SHA3-256");
+        }
+        catch (NoSuchAlgorithmException e){return null;}
+    }
+
     public static Mac getMac(final String algo) throws NoSuchAlgorithmException {
         return Mac.getInstance(algo, new org.spongycastle.jce.provider.BouncyCastleProvider());
     }
@@ -47,6 +61,16 @@ public class CryptoUtils {
 
     public static byte[] sha1(byte[] data) {
         MessageDigest sha1 = getSha1();
+        return sha1.digest(data);
+    }
+
+    public static byte[] sha256(byte[] data) {
+        MessageDigest sha1 = getSha256();
+        return sha1.digest(data);
+    }
+
+    public static byte[] sha3_256(byte[] data) {
+        MessageDigest sha1 = getSha3_256();
         return sha1.digest(data);
     }
 
