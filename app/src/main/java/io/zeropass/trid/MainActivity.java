@@ -14,13 +14,15 @@ import io.zeropass.trid.passport.PassportError;
 import io.zeropass.trid.tlv.TLVUtils;
 
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.logging.Logger;
 
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -29,9 +31,9 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.os.Build;
 import android.provider.Settings;
-import android.support.annotation.MainThread;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.TextView;
@@ -40,13 +42,13 @@ import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.app.ProgressDialog;
-import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final Logger Journal = Logger.getLogger("main");
     private Button mBtnCopyToClipboard;
     private TextView mTvOutput;
+    private TextView mLabelNfcStatus;
     private ScrollView mSvOutput;
     private EditText mEditTextDataToSign;
     private EditText mEditTextPassNum;
@@ -86,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         mEditTextPassNum    = (EditText)findViewById(R.id.editTextPassportNumber);
         mEditTextDob = (EditText)findViewById(R.id.editTextDateOfBirth);
         mEditTextDoe = (EditText)findViewById(R.id.editTextDateOfExpiry);
+        mLabelNfcStatus = (TextView) findViewById(R.id.labelNfcStatus);
 
         mProgressDialog = new ProgressDialog(this);
 
@@ -98,14 +101,25 @@ public class MainActivity extends AppCompatActivity {
             onNewIntent(getIntent());
         }
 
+        // Clipboard button click event
+        mBtnCopyToClipboard.setOnClickListener(new View.OnClickListener() {
 
+            @Override
+            public void onClick(View view) {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("trdi_output", mTvOutput.getText());
+                clipboard.setPrimaryClip(clip);
+                showToast("Copied to clipboard");
+            }
+        });
 
-        PublicKey pubKey = CryptoUtils.getPublicKeyFromBytes(TLVUtils.getValue(Utils.strToHex("6F81A230819F300D06092A864886F70D010101050003818D0030818902818100A13F98038CC80DE9BE94A917B5CFCE74CC4BB1337222E82D83C3FC2CBF5E81F80CBC4475CE2FCB08DBB2CEDAB4B3264DC12961B8166B32D238E5A52B02A271F46165B5EF03AC24C76B85D4B4E5A872925D692E8159B1B2BCFB5D6A2E086A88A78853363BC2A52E9725C668416243C45E921DED173FF970B4D0C5F277D034CCFD0203010001")));
-        byte[] message = Utils.strToHex("AABBCCAABBCC");
-        byte[] signature = Utils.strToHex("22BF2420BE8A18114CA8E3D3AADC44EC0BEC50E42C640882DBFEED068F0AAB75BE69B65130B037F1EBC75EE1448FA3B60B1E70DD9C821D58BDE234B45BDC3F848FF8DD6BB4BB6854E13A940EA038F1FDE7B67C72360AAFB9FED3A4D991973AC9440DB1D7DD6A86B72554A703B47FDDDAA495F514E80549D667E4595DB11801E6");
-
-        mDataToSign = message;
-        setOutput(pubKey, signature);
+//
+//        PublicKey pubKey = CryptoUtils.getPublicKeyFromBytes(TLVUtils.getValue(Utils.strToHex("6F81A230819F300D06092A864886F70D010101050003818D0030818902818100A13F98038CC80DE9BE94A917B5CFCE74CC4BB1337222E82D83C3FC2CBF5E81F80CBC4475CE2FCB08DBB2CEDAB4B3264DC12961B8166B32D238E5A52B02A271F46165B5EF03AC24C76B85D4B4E5A872925D692E8159B1B2BCFB5D6A2E086A88A78853363BC2A52E9725C668416243C45E921DED173FF970B4D0C5F277D034CCFD0203010001")));
+//        byte[] message = Utils.strToHex("AABBCCAABBCC");
+//        byte[] signature = Utils.strToHex("22BF2420BE8A18114CA8E3D3AADC44EC0BEC50E42C640882DBFEED068F0AAB75BE69B65130B037F1EBC75EE1448FA3B60B1E70DD9C821D58BDE234B45BDC3F848FF8DD6BB4BB6854E13A940EA038F1FDE7B67C72360AAFB9FED3A4D991973AC9440DB1D7DD6A86B72554A703B47FDDDAA495F514E80549D667E4595DB11801E6");
+//
+//        mDataToSign = message;
+//        setOutput(pubKey, signature);
     }
 
     void setOutputVisible(boolean visible) {
@@ -142,7 +156,24 @@ public class MainActivity extends AppCompatActivity {
                     Utils.hexToStr(iccSignature));
         }
         else { // Signature verification failed
-            showToast("Verification of signature failed!");
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            alert.setTitle("Error");
+            alert.setMessage("Failed to verify signature.");
+            alert.setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(final DialogInterface dialog, final int which) {
+                    Intent intent = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                        intent = new Intent(Settings.ACTION_NFC_SETTINGS);
+                    } else {
+                        intent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
+                    }
+                    dialog.dismiss();
+                    startActivity(intent);
+                }
+            });
+
+            alert.show();
         }
 
         mTvOutput.setText(output);
@@ -190,8 +221,10 @@ public class MainActivity extends AppCompatActivity {
             //finish();
             AlertDialog.Builder alert = new AlertDialog.Builder(this);
             if(mNfcAdapter == null) {
+                mLabelNfcStatus.setText(R.string.nfc_not_found);
+
                 alert.setTitle("Error");
-                alert.setMessage("No NFC adapter found. The app will now exited!");
+                alert.setMessage("No NFC adapter found. The app will now exit!");
                 alert.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(final DialogInterface dialog, final int which) {
@@ -199,6 +232,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } else if(!mNfcAdapter.isEnabled()) {
+                mLabelNfcStatus.setText(R.string.nfc_disabled);
+
                 alert.setTitle("Info");
                 alert.setMessage("NFC Adapter is not enabled you will be moved to settings app.");
                 alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -215,9 +250,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }
+            else {
+                mLabelNfcStatus.setText(R.string.nfc_enabled);
+            }
 
             alert.setCancelable(false);
-            //alert.show();
+            alert.show();
         }
 
         super.onResume();

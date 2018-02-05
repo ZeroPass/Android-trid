@@ -50,15 +50,14 @@
             android:inputType="number" />
 
 
-
         <EditText
             android:id="@+id/editTextDateOfExpiry"
-            android:hint="Date Of Expiry (YYMMDD)"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:maxLength="6"
-            android:inputType="number" />
+            android:hint="Expiry Date (YYMMDD)"
+            android:inputType="number"
+            android:maxLength="6" />
 
         <Space
             android:layout_width="match_parent"
@@ -70,11 +69,11 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/textView2"
+                android:id="@+id/labelNfcStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
-                android:text="NFC is listening ..."
+                android:text="@string/nfc_enabled"
                 android:textAlignment="center"
                 android:textSize="12pt" />
         </LinearLayout>
