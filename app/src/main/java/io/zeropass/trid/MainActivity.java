@@ -299,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
 
     void disableNfc() {
         if (mNfcAdapter != null) {
-            mNfcAdapter.enableForegroundDispatch(this, mPendingIntent, mIntentFilters, mTechLists);
+            mNfcAdapter.disableForegroundDispatch(this);
         }
     }
 
